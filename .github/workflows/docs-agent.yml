@@ -1,0 +1,105 @@
+name: Docs Agent
+
+# Drafts docs for a feature PR. Never merges anything.
+# Trigger: a repository_dispatch from a product repo (see scripts/docs-agent/templates/request-docs.yml),
+# or a manual run for the replay demo.
+on:
+  repository_dispatch:
+    types: [docs-agent-run]
+  workflow_dispatch:
+    inputs:
+      source_pr:
+        description: URL of the feature PR to replay (leave empty to use the synthetic fixture)
+        required: false
+        default: ''
+      use_model:
+        description: Call the model (needs the DOCS_AGENT_MODEL_KEY secret). Otherwise use the canned draft.
+        type: boolean
+        default: false
+      publish:
+        description: Open a real draft PR in this repo, based on the branch the workflow runs on. Otherwise dry run only.
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # PR-derived values go through env and are only ever read by code, never interpolated into shell.
+      SOURCE_PR: ${{ github.event.client_payload.pr || inputs.source_pr }}
+      USE_MODEL: ${{ inputs.use_model }}
+    steps:
+      - name: Checkout the docs repo (default branch only, never PR code)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Collect context
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "$SOURCE_PR" ]; then
+            node scripts/docs-agent/collect.mjs "$SOURCE_PR" > context.json
+          else
+            node scripts/docs-agent/collect.mjs --fixture scripts/docs-agent/fixtures/synthetic-pr.json > context.json
+          fi
+
+      - name: Route pages into generated and drafted lanes
+        run: node scripts/docs-agent/route.mjs context.json > routed.json
+
+      - name: Draft (the model step has no GitHub token)
+        env:
+          MODEL_API_KEY: ${{ secrets.DOCS_AGENT_MODEL_KEY }}
+        run: |
+          if [ "$USE_MODEL" = "true" ]; then
+            node scripts/docs-agent/draft.mjs routed.json > draft.json
+          else
+            node scripts/docs-agent/draft.mjs routed.json --canned scripts/docs-agent/fixtures/synthetic-pr.json > draft.json
+          fi
+
+      - name: Verify
+        run: node scripts/docs-agent/verify.mjs draft.json routed.json > verified.json
+
+      - name: Upload the verified draft
+        uses: actions/upload-artifact@v4 # TODO: pin to a commit SHA, as review-app.yml does
+        with:
+          name: verified-draft
+          path: verified.json
+
+  publish:
+    needs: draft
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout the docs repo
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: true # this job pushes the draft branch
+
+      - name: Download the verified draft
+        uses: actions/download-artifact@v4 # TODO: pin to a commit SHA
+        with:
+          name: verified-draft
+
+      - name: Dry run, so the demo shows the PR body and comment without opening anything
+        run: node scripts/docs-agent/publish.mjs verified.json --dry-run docs-agent-output
+
+      - name: Upload the PR body and comment
+        uses: actions/upload-artifact@v4 # TODO: pin to a commit SHA
+        with:
+          name: docs-agent-output
+          path: docs-agent-output
+
+      - name: Open the draft PR and post the comment (only when publish is ticked)
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOCS_BASE_BRANCH: ${{ github.ref_name }}
+          DOCS_AGENT_RUN: ${{ github.run_number }}
+        run: node scripts/docs-agent/publish.mjs verified.json
