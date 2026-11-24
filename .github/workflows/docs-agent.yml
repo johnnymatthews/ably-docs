@@ -87,6 +87,9 @@ jobs:
         with:
           name: verified-draft
 
+      - name: Summarise the draft in the log and on the run summary page
+        run: node scripts/docs-agent/summarize.mjs verified.json | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Dry run, so the demo shows the PR body and comment without opening anything
         run: node scripts/docs-agent/publish.mjs verified.json --dry-run docs-agent-output
 
