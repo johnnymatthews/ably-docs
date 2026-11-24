@@ -325,8 +325,41 @@ async function deactivatePush() {
 After successful activation, `deviceId` can be used to publish push notifications to this device.
 
 <Aside data-type='note'>
-In React Native `realtime.push.activate()` is not used because it's a JS SDK and it registers browser for push notifications, which is not what you want in a React Native app. Instead, use `realtime.push.admin.deviceRegistrations` API to register the device.
+The default `realtime.push.activate()` targets browsers, so this guide registers the device with the `realtime.push.admin.deviceRegistrations` API instead. To use `push.activate()` in React Native, register the `ably/react-native-push` plugin as described in the following section.
 </Aside>
+
+### Activate push with the React Native plugin <a id="step-2-plugin"/>
+
+The `ably/react-native-push` plugin lets you call `push.activate()` and `push.deactivate()` from a React Native app. You supply an async storage implementation that matches `@react-native-async-storage/async-storage`, and a `requestToken` callback that returns `{ transportType: 'fcm' | 'apns', token }`. Requesting notification permission before returning a token is your application's responsibility.
+
+Pass the object returned by `create()` as the `Push` plugin when you construct the client, then call `activate()`:
+
+<Code>
+```react
+import * as Ably from 'ably';
+import ReactNativePush from 'ably/react-native-push';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import messaging from '@react-native-firebase/messaging';
+
+const Push = ReactNativePush.create({
+  storage: AsyncStorage,
+  requestToken: async () => ({
+    transportType: 'fcm',
+    token: await messaging().getToken(),
+  }),
+});
+
+const client = new Ably.Realtime({
+  authUrl: '/auth',
+  clientId: 'push-tutorial-client',
+  plugins: { Push },
+});
+
+await client.push.activate();
+```
+</Code>
+
+Return `transportType: 'apns'` with a raw APNs device token to register an APNs recipient instead of an FCM one. In React Native, use `await client.getDevice()` to retrieve the local device. The synchronous `client.device()` is deprecated and throws an error when push storage is asynchronous.
 
 ### Handle push notifications <a id="step-2-handle"/>
 
