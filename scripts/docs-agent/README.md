@@ -35,7 +35,7 @@ Existing files change through exact find-and-replace patches (`replacements`), e
 
 ## Replay
 
-A replay rewinds this repo to the commit before a real docs PR, runs the agent on the matching SDK PR, and lets you compare the draft with what a person wrote. See `REPLAY.md`.
+A replay rewinds this repo to the commit before a real docs PR, runs the agent on the matching SDK PR, and lets you compare the draft with what a person wrote. See `REPLAY.md`, and `REPLAY-RESULT.md` for the first result.
 
 ## Known gaps
 

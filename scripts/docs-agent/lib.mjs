@@ -69,7 +69,8 @@ export const addedLines = (patch) =>
 export const COMMENT_MARKER = '<!-- docs-agent:v1 -->';
 
 export function renderComment({ summary, draftUrl, previewUrl, notSure }) {
-  const shown = notSure.slice(0, 3);
+  const clip = (text) => (text.length > 90 ? `${text.slice(0, 87).trimEnd()}...` : text.replace(/\.$/, ''));
+  const shown = notSure.slice(0, 2).map(clip);
   const more = notSure.length > shown.length ? ` (and ${notSure.length - shown.length} more, listed on the draft PR)` : '';
   const unsure = notSure.length ? `${shown.join('; ')}${more}` : 'nothing I could identify';
   const preview = previewUrl ? ` (preview: ${previewUrl})` : '';
