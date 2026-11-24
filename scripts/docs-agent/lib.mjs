@@ -39,6 +39,25 @@ export function codeText(markdown) {
   return parts.join('\n');
 }
 
+// Page URL for a content file, for example src/pages/docs/push/index.mdx -> /docs/push
+export const pageUrl = (file) =>
+  `/${file.replace(/^src\/pages\//, '').replace(/\.mdx$/, '').replace(/\/index$/, '')}`;
+
+// Apply exact find-and-replace patches. Each find string must match exactly once, otherwise it is reported and skipped.
+export function applyReplacements(text, replacements) {
+  let out = text;
+  const errors = [];
+  for (const { find, replace } of replacements) {
+    const count = find ? out.split(find).length - 1 : 0;
+    if (count !== 1) {
+      errors.push(`"${String(find).slice(0, 60)}" matched ${count} times, expected exactly 1`);
+      continue;
+    }
+    out = out.replace(find, () => replace);
+  }
+  return { text: out, errors };
+}
+
 export const addedLines = (patch) =>
   patch
     .split('\n')

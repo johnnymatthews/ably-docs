@@ -29,9 +29,16 @@ node $D/publish.mjs $T/verified.json --dry-run $T/out
 
 The fixture is synthetic. Its repository, method names and error code are invented, and its canned draft contains planted mistakes so the verifier has something to catch. See `examples/dry-run/` for the output.
 
+## Edit contract
+
+Existing files change through exact find-and-replace patches (`replacements`), each of which must match exactly once. New pages use `create` with full content. Navigation is edited the same way, so the agent is shown the nav file that already links to the pages it is editing. This keeps edits to 20,000-character pages small and checkable.
+
+## Replay
+
+A replay rewinds this repo to the commit before a real docs PR, runs the agent on the matching SDK PR, and lets you compare the draft with what a person wrote. See `REPLAY.md`.
+
 ## Known gaps
 
 - Generators are listed in `routing.json` but not run by the pipeline yet.
-- `nav_changes` are accepted in the draft but not applied.
 - Reactions on the comment, the reply handler and the run log (DESIGN.md sections 8 and 11) are not built.
 - Third-party actions in the workflow are not yet pinned to commit SHAs.

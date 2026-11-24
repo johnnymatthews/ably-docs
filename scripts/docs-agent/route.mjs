@@ -1,6 +1,7 @@
 // Step 2: sort affected pages into the generated lane (a script owns them) or the
 // drafted lane (the agent may write them), and check that sources of truth were updated.
 //   node scripts/docs-agent/route.mjs context.json > routed.json
+import fs from 'node:fs';
 import { GENERATED_MARKER, addedLines, printJson, readJson } from './lib.mjs';
 
 const config = readJson(new URL('./routing.json', import.meta.url));
@@ -23,10 +24,20 @@ const changedPaths = context.source.files.map((file) => file.path);
 
 const warnings = [];
 for (const check of config.staleSourceChecks) {
-  const triggered = new RegExp(check.whenAddedLinesMatch).test(added);
   const sourceChanged = changedPaths.some((changed) => new RegExp(check.unlessChangedPathMatches).test(changed));
-  if (triggered && !sourceChanged) {
-    warnings.push(`${check.name}: ${check.message}`);
+  if (sourceChanged) {
+    continue;
+  }
+  // Values the PR uses that the generated pages do not already cover.
+  const known = fs.existsSync(check.knownIfPageExistsIn) ? fs.readdirSync(check.knownIfPageExistsIn) : [];
+  const values = new Set();
+  for (const match of added.matchAll(new RegExp(check.whenAddedLinesMatch, 'g'))) {
+    if (!known.some((name) => name.startsWith(`${match[1]}-`))) {
+      values.add(match[1]);
+    }
+  }
+  if (values.size > 0) {
+    warnings.push(`${check.name}: ${check.message.replace('{values}', [...values].join(', '))}`);
   }
 }
 
@@ -36,5 +47,6 @@ printJson({
   source: context.source,
   truncated: context.truncated,
   docs: draftedContext, // the agent only ever sees the drafted lane
+  nav: context.nav ?? [],
   routing: { pages, warnings, generators: config.generators },
 });

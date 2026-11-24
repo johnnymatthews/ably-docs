@@ -21,9 +21,10 @@
   "staleSourceChecks": [
     {
       "name": "error code without registry entry",
-      "whenAddedLinesMatch": "(?:errorCode|code)\\s*[:=]\\s*\\d{5}\\b",
+      "whenAddedLinesMatch": "(?:errorCode|code)\\s*[:=]\\s*(\\d{5})\\b",
+      "knownIfPageExistsIn": "src/pages/docs/platform/errors/codes",
       "unlessChangedPathMatches": "errors/codes/",
-      "message": "The PR adds a five-digit error code but changes no registry entry, so no error page will be generated."
+      "message": "The PR uses five-digit error codes that have no page yet ({values}) and changes no registry entry, so no error page will be generated."
     }
   ]
 }

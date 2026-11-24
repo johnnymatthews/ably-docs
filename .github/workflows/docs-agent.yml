@@ -16,6 +16,10 @@ on:
         description: Call the model (needs the DOCS_AGENT_MODEL_KEY secret). Otherwise use the canned draft.
         type: boolean
         default: false
+      publish:
+        description: Open a real draft PR in this repo, based on the branch the workflow runs on. Otherwise dry run only.
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -92,5 +96,10 @@ jobs:
           name: docs-agent-output
           path: docs-agent-output
 
-      # Live publishing is intentionally not wired up yet. Enable it by replacing the dry run with:
-      #   GH_TOKEN=${{ github.token }} GITHUB_REPOSITORY=${{ github.repository }} node scripts/docs-agent/publish.mjs verified.json
+      - name: Open the draft PR and post the comment (only when publish is ticked)
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOCS_BASE_BRANCH: ${{ github.ref_name }}
+          DOCS_AGENT_RUN: ${{ github.run_number }}
+        run: node scripts/docs-agent/publish.mjs verified.json

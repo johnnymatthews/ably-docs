@@ -13,7 +13,7 @@ Drafted by the Docs Agent. A person must review before merge.
 - Failures past the limit reject with code 49999
 
 **Source-of-truth warnings**
-- error code without registry entry: The PR adds a five-digit error code but changes no registry entry, so no error page will be generated.
+- error code without registry entry: The PR uses five-digit error codes that have no page yet (49999) and changes no registry entry, so no error page will be generated.
 
 **Verification:** 3 claims checked, 2 failed. Names in code samples not found in the PR or existing docs: 1. Edits rejected: 2.
 **Engineer response:** none yet
