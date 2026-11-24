@@ -1,0 +1,30 @@
+# Template for a PRODUCT repo (not used in this repo). Copy to .github/workflows/request-docs.yml there.
+# Mirrors the label gate in review-app.yml: only an organisation member can start the Docs Agent.
+name: Request docs
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions: {}
+
+jobs:
+  dispatch:
+    if: github.event.label.name == 'needs:docs'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check that the person who added the label is an organisation member
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ secrets.ABLY_ORG_TOKEN }}
+          script: |
+            await github.rest.orgs.getMembershipForUser({ org: 'ably', username: context.actor });
+
+      - name: Ask the docs repo to run the Docs Agent
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.DOCS_DISPATCH_TOKEN }} # fine-grained token, dispatch on the docs repo only
+        run: |
+          gh api repos/ably/docs/dispatches -f event_type=docs-agent-run -f "client_payload[pr]=$PR_URL"

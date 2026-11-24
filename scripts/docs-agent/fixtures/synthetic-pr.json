@@ -1,0 +1,46 @@
+{
+  "_note": "SYNTHETIC. The repository, PR, method names and error code below are invented for the offline demo. They are not real Ably APIs. The draft is canned (no model call) and deliberately contains mistakes so the verifier has something to catch.",
+  "source": {
+    "url": "https://github.com/example-org/example-sdk/pull/1",
+    "repo": "example-org/example-sdk",
+    "number": 1,
+    "title": "Add channel.setRetryLimit()",
+    "body": "Adds setRetryLimit(limit) so applications can cap how many times a failed publish is retried. Failures past the limit now reject with error code 49999.",
+    "merged": false,
+    "files": [
+      {
+        "path": "src/channel.ts",
+        "status": "modified",
+        "patch": "@@ -40,6 +40,16 @@ export class Channel {\n+  /** Limits how many times a failed publish is retried. */\n+  setRetryLimit(limit: number): void {\n+    if (limit < 0) {\n+      throw new ErrorInfo('limit must be zero or more', { code: 40003 });\n+    }\n+    this.retryLimit = limit;\n+  }\n+\n+  // Failures past the limit reject with a new error.\n+  retryLimitExceeded = { errorCode: 49999, statusCode: 400 };\n"
+      }
+    ]
+  },
+  "draft": {
+    "summary": "I read this PR and think it lets you cap how many times a failed publish is retried, so that a stuck publish fails fast instead of retrying without limit.",
+    "feature_version": "0.0.0-synthetic",
+    "edits": [
+      {
+        "path": "src/pages/docs/channels/retry-limit-demo.mdx",
+        "action": "create",
+        "content": "---\ntitle: \"Limit publish retries (synthetic demo)\"\nmeta_description: \"Synthetic demo page produced by the offline Docs Agent replay. Not real Ably documentation.\"\n---\n\n<Aside data-type='experimental'>\nThis page is a synthetic demo. The API it describes does not exist.\n</Aside>\n\nCall `setRetryLimit(limit)` to cap how many times a failed publish is retried.\n\n<Code>\n```javascript\nchannel.setRetryLimit(3);\nchannel.resetRetries();\n```\n</Code>\n"
+      },
+      {
+        "path": "package.json",
+        "action": "modify",
+        "content": "{}"
+      },
+      {
+        "path": "src/pages/docs/platform/errors/codes/50003-timeout-error.mdx",
+        "action": "modify",
+        "content": "Edited by hand."
+      }
+    ],
+    "nav_changes": [],
+    "claims": [
+      { "text": "setRetryLimit takes a number of retries", "evidence": "patch:src/channel.ts" },
+      { "text": "resetRetries restores the default limit", "evidence": "" },
+      { "text": "Failures past the limit reject with code 49999", "evidence": "patch:src/missing-file.ts" }
+    ],
+    "not_sure": ["What the default limit is"]
+  }
+}
