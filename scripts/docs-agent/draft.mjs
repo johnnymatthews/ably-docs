@@ -64,7 +64,7 @@ const response = await fetch('https://api.anthropic.com/v1/messages', {
   }),
 });
 if (!response.ok) {
-  console.error(`Model API returned ${response.status}`);
+  console.error(`Model API returned ${response.status}: ${(await response.text()).slice(0, 600)}`);
   process.exit(1);
 }
 const data = await response.json();
